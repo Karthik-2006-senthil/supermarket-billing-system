@@ -1,0 +1,208 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.util.ArrayList;
+
+class Product {
+    private String name;
+    private double price;
+    private int stockQuantity;
+
+    public Product(String name, double price, int stockQuantity) {
+        this.name = name;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public int getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void updateStock(int quantity) {
+        this.stockQuantity += quantity;
+    }
+
+    @Override
+    public String toString() {
+        return name + " - ₹" + price + " (Stock: " + stockQuantity + ")";
+    }
+}
+
+class Transaction {
+    private ArrayList<Product> products;
+    private double totalAmount;
+
+    public Transaction() {
+        products = new ArrayList<>();
+        totalAmount = 0.0;
+    }
+
+    public void addProduct(Product product, int quantity) {
+        for (int i = 0; i < quantity; i++) {
+            products.add(product);
+            totalAmount += product.getPrice();
+        }
+        product.updateStock(-quantity);
+    }
+
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public ArrayList<Product> getProducts() {
+        return products;
+    }
+}
+
+class Inventory {
+    private ArrayList<Product> productList;
+
+    public Inventory() {
+        productList = new ArrayList<>();
+    }
+
+    public void addProduct(Product product) {
+        productList.add(product);
+    }
+
+    public Product findProduct(String productName) {
+        for (Product product : productList) {
+            if (product.getName().equalsIgnoreCase(productName)) {
+                return product;
+            }
+        }
+        return null;
+    }
+
+    public ArrayList<Product> getProducts() {
+        return productList;
+    }
+}
+
+class InventoryManagementApp {
+    private Inventory inventory;
+    private Transaction currentTransaction;
+
+    public InventoryManagementApp() {
+        inventory = new Inventory();
+        currentTransaction = new Transaction();
+        createGUI();
+    }
+
+    public void createGUI() {
+        Frame frame = new Frame("Inventory Management System");
+        frame.setSize(600, 400);
+        frame.setLayout(new BorderLayout());
+
+        // Panels
+        Panel inputPanel = new Panel(new GridLayout(4, 2));
+        Panel buttonPanel = new Panel(new FlowLayout());
+        Panel outputPanel = new Panel(new BorderLayout());
+
+        // Input Fields
+        TextField productNameField = new TextField();
+        TextField productPriceField = new TextField();
+        TextField productStockField = new TextField();
+        TextArea outputArea = new TextArea();
+        outputArea.setEditable(false);
+
+        // Labels
+        inputPanel.add(new Label("Product Name:"));
+        inputPanel.add(productNameField);
+        inputPanel.add(new Label("Product Price:"));
+        inputPanel.add(productPriceField);
+        inputPanel.add(new Label("Stock Quantity:"));
+        inputPanel.add(productStockField);
+
+        // Buttons
+        Button addProductButton = new Button("Add Product");
+        Button viewProductsButton = new Button("View Products");
+        Button addTransactionButton = new Button("Add to Transaction");
+        Button viewTransactionButton = new Button("View Transaction");
+
+        buttonPanel.add(addProductButton);
+        buttonPanel.add(viewProductsButton);
+        buttonPanel.add(addTransactionButton);
+        buttonPanel.add(viewTransactionButton);
+
+        // Add action listeners
+        addProductButton.addActionListener(e -> {
+            try {
+                String name = productNameField.getText();
+                double price = Double.parseDouble(productPriceField.getText());
+                int stock = Integer.parseInt(productStockField.getText());
+
+                Product product = new Product(name, price, stock);
+                inventory.addProduct(product);
+
+                outputArea.setText("Product added successfully:\n" + product);
+                productNameField.setText("");
+                productPriceField.setText("");
+                productStockField.setText("");
+            } catch (NumberFormatException ex) {
+                outputArea.setText("Error: Invalid input. Please check the fields.");
+            }
+        });
+
+        viewProductsButton.addActionListener(e -> {
+            ArrayList<Product> products = inventory.getProducts();
+            StringBuilder sb = new StringBuilder("Inventory:\n");
+            for (Product product : products) {
+                sb.append(product).append("\n");
+            }
+            outputArea.setText(sb.toString());
+        });
+
+        addTransactionButton.addActionListener(e -> {
+            String name = productNameField.getText();
+            try {
+                int quantity = Integer.parseInt(productStockField.getText());
+                Product product = inventory.findProduct(name);
+
+                if (product != null && product.getStockQuantity() >= quantity) {
+                    currentTransaction.addProduct(product, quantity);
+                    outputArea.setText("Added to transaction:\n" + product.getName() + " x" + quantity);
+                } else {
+                    outputArea.setText("Error: Product not found or insufficient stock.");
+                }
+            } catch (NumberFormatException ex) {
+                outputArea.setText("Error: Invalid quantity.");
+            }
+        });
+
+        viewTransactionButton.addActionListener(e -> {
+            ArrayList<Product> products = currentTransaction.getProducts();
+            StringBuilder sb = new StringBuilder("Current Transaction:\n");
+            for (Product product : products) {
+                sb.append(product.getName()).append(" - ₹").append(product.getPrice()).append("\n");
+            }
+            sb.append("Total: ₹").append(currentTransaction.getTotalAmount());
+            outputArea.setText(sb.toString());
+        });
+
+        // Adding components to the frame
+        outputPanel.add(outputArea, BorderLayout.CENTER);
+        frame.add(inputPanel, BorderLayout.NORTH);
+        frame.add(buttonPanel, BorderLayout.CENTER);
+        frame.add(outputPanel, BorderLayout.SOUTH);
+
+        frame.setVisible(true);
+
+        frame.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent we) {
+                System.exit(0);
+            }
+        });
+    }
+
+    public static void main(String[] args) {
+        new InventoryManagementApp();
+    }
+}
